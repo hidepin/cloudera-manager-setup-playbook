@@ -16,7 +16,6 @@
 - name: disable services
   service: name={{item}} state=stopped enabled=no
   with_items:
-    - NetworkManager
     - iptables
     - ip6tables
 
