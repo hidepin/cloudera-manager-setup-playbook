@@ -1,0 +1,62 @@
+---
+# file: roles/common/tasks/main.yml
+- name: packages install
+  yum: name={{item}} state=present
+  with_items:
+    - openssh-clients
+    - libselinux-python
+    - ntp
+    - screen
+    - emacs-nox
+
+- name: disable selinux
+  selinux: state=disabled
+  when: ansible_selinux.config_mode is not defined or ansible_selinux.config_mode != "disabled"
+
+- name: disable services
+  service: name={{item}} state=stopped enabled=no
+  with_items:
+    - NetworkManager
+    - iptables
+    - ip6tables
+
+- name: update hosts files
+  template: src=etc_hosts.j2 dest=/etc/hosts owner=root group=root mode=0644
+
+- name: Add NOZEROCONF
+  lineinfile: dest=/etc/sysconfig/network regexp="^NOZEROCONF" line="NOZEROCONF=yes" state=present
+
+- name: Disable ipv6
+  lineinfile: dest=/etc/modprobe.d/ipv6.conf regexp='^options ipv6 disable.*' line="options ipv6 disable=1" state=present create=yes
+
+- name: add ulimits settings
+  template: src=enableulimit.sh.j2 dest=/etc/profile.d/enableulimit.sh.j2 owner=root group=root mode=0644
+
+- name: ntp step-tickers settings
+  template: src=etc_ntp_step-tickers.j2 dest=/etc/ntp/step-tickers owner=root group=root mode=0644
+  notify:
+    - ntpd restart
+
+- name: ntp.conf settings
+  template: src=ntp.conf.j2 dest=/etc/ntp.conf owner=root group=root mode=0644
+    - ntpd restart
+
+- name: /etc/sysconfig/ntpd settings
+  template: src=etc_sysconfig_ntpd.j2 dest=/etc/sysconfig/ntpd owner=root group=root mode=0644
+    - ntpd restart
+
+- name: ntpd running check
+  command: service ntpd status
+  register: running_ntpd
+  failed_when: running_ntpd.rc not in [0,1,3]
+  changed_when: running_ntpd.rc != 0
+
+- name: run ntpdate
+  service: name=ntpdate state=started
+  when: running_ntpd.rc == 1
+
+- name: enable ntpdate service
+  service: name=ntpdate enabled=yes
+
+- name: enable ntpd services
+  service: name=ntpd state=started enabled=yes

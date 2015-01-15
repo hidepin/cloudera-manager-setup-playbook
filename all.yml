@@ -1,0 +1,5 @@
+---
+# file: all.yml
+- hosts: all
+  roles:
+    - common

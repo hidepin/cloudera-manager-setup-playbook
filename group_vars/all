@@ -1,0 +1,5 @@
+ansible_ssh_user: root
+sudo: no
+colon: ":"
+ntp_server: 192.168.0.1
+
