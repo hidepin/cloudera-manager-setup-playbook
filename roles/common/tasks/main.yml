@@ -38,6 +38,7 @@
 
 - name: ntp.conf settings
   template: src=ntp.conf.j2 dest=/etc/ntp.conf owner=root group=root mode=0644
+  notify:
     - ntpd restart
 
 - name: /etc/sysconfig/ntpd settings
