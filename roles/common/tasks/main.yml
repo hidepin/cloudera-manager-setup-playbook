@@ -43,6 +43,7 @@
 
 - name: /etc/sysconfig/ntpd settings
   template: src=etc_sysconfig_ntpd.j2 dest=/etc/sysconfig/ntpd owner=root group=root mode=0644
+  notify:
     - ntpd restart
 
 - name: ntpd running check
