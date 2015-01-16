@@ -29,7 +29,7 @@
   lineinfile: dest=/etc/modprobe.d/ipv6.conf regexp='^options ipv6 disable.*' line="options ipv6 disable=1" state=present create=yes
 
 - name: add ulimits settings
-  template: src=enableulimit.sh.j2 dest=/etc/profile.d/enableulimit.sh.j2 owner=root group=root mode=0644
+  template: src=enableulimit.sh.j2 dest=/etc/profile.d/enableulimit.sh owner=root group=root mode=0644
 
 - name: ntp step-tickers settings
   template: src=etc_ntp_step-tickers.j2 dest=/etc/ntp/step-tickers owner=root group=root mode=0644
@@ -59,3 +59,8 @@
 
 - name: enable ntpd services
   service: name=ntpd state=started enabled=yes
+
+# for CentOS 6.6
+- name: LANG en_US.UTF-8 from ja_JP.UTF-8
+  template: src=i18n.j2 dest=/etc/sysconfig/i18n owner=root group=root mode=0644
+
