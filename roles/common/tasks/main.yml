@@ -22,6 +22,9 @@
 - name: update hosts files
   template: src=etc_hosts.j2 dest=/etc/hosts owner=root group=root mode=0644
 
+- name: swappiness settings
+  template: src=sysctl.conf.j2 dest=/etc/sysctl.conf owner=root group=root mode=0644
+
 - name: Add NOZEROCONF
   lineinfile: dest=/etc/sysconfig/network regexp="^NOZEROCONF" line="NOZEROCONF=yes" state=present
 
