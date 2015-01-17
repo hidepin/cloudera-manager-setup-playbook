@@ -3,4 +3,7 @@
 - hosts: all
   roles:
     - common
+
+- hosts: slave
+  roles:
     - hadoop_presetup

@@ -1,5 +1,8 @@
 ---
 # file: roles/hadoop_presetup/tasks/main.yml
+- name: packages install
+  yum: name=parted state=present
+
 - name: create partition
   command: parted /dev/{{item.dev}} mklabel gpt -- mkpart primary ext4 1 -1
   when: ansible_devices.{{item.dev}}.partitions.{{item.dev}}1 is not defined
@@ -7,6 +10,10 @@
 
 - name: format for hdfs disk.
   filesystem: fstype=ext4 dev=/dev/{{item.dev}}1
+  with_items: hadoop_storage
+
+- name: create datanode dir
+  file: dest={{item.mount_point}} state=directory recurse=yes
   with_items: hadoop_storage
 
 - name: mount device for hdfs
