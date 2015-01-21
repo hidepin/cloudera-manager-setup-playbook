@@ -2,6 +2,7 @@ ansible_ssh_user: root
 sudo: no
 colon: ":"
 ntp_server: 192.168.0.1
+cloudera_manager_ver: 5.1.2
 hadoop_storage:
     - { mount_point: '/data/1', dev: 'sdb' }
     - { mount_point: '/data/2', dev: 'sdc' }

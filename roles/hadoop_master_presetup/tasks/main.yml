@@ -1,0 +1,18 @@
+---
+# file: roles/hadoop_master_presetup/tasks/main.yml
+- name: cloudera manager settings
+  template: src=cloudera-manager.repo.j2 dest=/etc/yum.repos.d/cloudera-manager.repo owner=root group=root mode=0644
+
+- name: packages install
+  yum: name={{item}} state=present
+  with_items:
+    - oracle-j2sdk1.7
+    - cloudera-manager-daemons
+    - cloudera-manager-server
+    - cloudera-manager-server-db-2
+
+- name: start cloudera-manager
+  service: name={{item}} state=started
+  with_items:
+    - cloudera-scm-server-db
+    - cloudera-scm-server

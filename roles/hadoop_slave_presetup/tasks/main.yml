@@ -1,5 +1,5 @@
 ---
-# file: roles/hadoop_presetup/tasks/main.yml
+# file: roles/hadoop_slave_presetup/tasks/main.yml
 - name: packages install
   yum: name=parted state=present
 

@@ -4,6 +4,10 @@
   roles:
     - common
 
+- hosts: master
+  roles:
+    - hadoop_master_presetup
+
 - hosts: slave
   roles:
-    - hadoop_presetup
+    - hadoop_slave_presetup
