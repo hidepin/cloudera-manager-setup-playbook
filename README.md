@@ -10,41 +10,41 @@ Cloudera Managerをインストールする事前状態に設定。
 
 1. Cloudera Managerのホストにログインしrootになる。
 
-  ```
-  su -
-  ```
+    ```
+    su -
+    ```
 
 2. Cloudera Managerのインストーラーを起動
 
-  ```
-  ./cloudera-manager-installer.bin
-  ```
+    ```
+      ./cloudera-manager-installer.bin
+    ```
 
-  1. Cloudera Managerのライセンスの同意
+    1. Cloudera Managerのライセンスの同意
 
-  2. OpenJDKのライセンスの同意
+    2. OpenJDKのライセンスの同意
 
 3. Cloudera Managerからセットアップ
 
-  1. Cloudera Managerにアクセス http://(Cloudera Managerホスト):7180
+    1. Cloudera Managerにアクセス http://(Cloudera Managerホスト):7180
 
-  2. ログイン
-    - ユーザ名: admin
-    - パスワード: admin
+    2. ログイン
+        - ユーザ名: admin
+        - パスワード: admin
 
-  3. エンドユーザライセンスの同意
+    3. エンドユーザライセンスの同意
 
-    「はい。エンドユーザーライセンスの契約条件に同意します」にチェックを入れ、「続行」を押下する
+      「はい。エンドユーザーライセンスの契約条件に同意します」にチェックを入れ、「続行」を押下する
 
-  4. エディションの選択
+    4. エディションの選択
 
-    「Cloudera Express」を選択し、「続行」を押下する
+      「Cloudera Express」を選択し、「続行」を押下する
 
-  5. 最終確認
+    5. 最終確認
 
-    「続行」を押下する
+      「続行」を押下する
 
-  6. 選択肢に従いインストールする
+    6. 選択肢に従いインストールする
 
 # 動作確認済み環境
 
