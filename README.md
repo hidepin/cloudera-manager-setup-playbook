@@ -1,1 +1,1 @@
-# cloudera-manager-presetup-playbook
+# cloudera-manager-setup-playbook

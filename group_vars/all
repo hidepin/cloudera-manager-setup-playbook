@@ -18,13 +18,12 @@ tuned_profile_parameter:
   - section: 'main'
     parameter:
       - { option: 'include', value: 'throughput-performance' }
+  - section: 'vm'
+    parameter:
+      - { option: 'transparent_hugepages', value: 'never' }
   - section: 'sysctl'
     parameter:
       - { option: 'net.ipv4.ip_local_port_range', value: '32768 64999' }
-      - { option: 'net.core.somaxconn', value: '511' }
-      - { option: 'net.ipv4.tcp_keepalive_intvl', value: '5' }
-      - { option: 'net.ipv4.tcp_keepalive_probes', value: '5' }
-      - { option: 'net.ipv4.tcp_keepalive_time', value: '60' }
 kernel_update: True
 update_pkg:
   - glibc
