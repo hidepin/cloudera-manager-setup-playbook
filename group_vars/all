@@ -24,6 +24,7 @@ tuned_profile_parameter:
   - section: 'sysctl'
     parameter:
       - { option: 'net.ipv4.ip_local_port_range', value: '32768 64999' }
+      - { option: 'vm.swappiness', value: '0' }
 kernel_update: True
 update_pkg:
   - glibc
