@@ -1,0 +1,9 @@
+---
+# tasks file for cloudera_node
+- name: openjdk delete
+  package:
+    name: "{{ item }}"
+    state: absent
+  with_items:
+    - java-1.8.0-openjdk
+    - java-1.8.0-openjdk-headless

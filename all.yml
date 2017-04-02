@@ -3,6 +3,7 @@
 - hosts: all
   roles:
     - common
+    - cloudera_node
   environment:
     - "{{ proxy_env }}"
 
