@@ -1,10 +1,5 @@
-[master]
-192.168.0.15
+[cloudera_manager]
+xxx.xxx.xxx.xxx
 
-[slave]
-192.168.0.16
-192.168.0.17
-192.168.0.18
-
-
-
+[cluster_host]
+xxx.xxx.xxx.xxx

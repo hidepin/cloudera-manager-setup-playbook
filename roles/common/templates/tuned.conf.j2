@@ -1,0 +1,7 @@
+{% for section in tuned_profile_parameter %}
+[{{ section.section }}]
+{% for item in section.parameter %}
+{{ item.option }} = {{ item.value }}
+{% endfor %}
+
+{% endfor %}

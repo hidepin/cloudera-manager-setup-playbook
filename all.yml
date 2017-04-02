@@ -3,11 +3,12 @@
 - hosts: all
   roles:
     - common
+    - cloudera_node
+  environment:
+    - "{{ proxy_env }}"
 
-- hosts: master
+- hosts: cloudera_manager
   roles:
-    - hadoop_master_presetup
-
-- hosts: slave
-  roles:
-    - hadoop_slave_presetup
+    - cloudera_manager_setup
+  environment:
+    - "{{ proxy_env }}"

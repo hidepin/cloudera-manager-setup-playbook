@@ -1,0 +1,67 @@
+---
+# file: roles/common/tasks/yum_setup.yml
+- block:
+  - name: input rhel_subscription username
+    pause:
+      prompt: "input rhel subscription username"
+    run_once: true
+    register: rhel_subscription_username
+    when: rhel_subscription.username is undefined
+
+  - name: input rhel_subscription password
+    pause:
+      prompt: "input rhel subscription password"
+    run_once: true
+    register: rhel_subscription_password
+    when: rhel_subscription.password is undefined
+
+  - name: set rhel_subscription
+    set_fact:
+      rhel_subscription:
+        username: "{{ (rhel_subscription_username.user_input is defined )|ternary(rhel_subscription_username.user_input|default(), rhel_subscription.username) }}"
+        password: "{{ (rhel_subscription_password.user_input is defined )|ternary(rhel_subscription_password.user_input|default(), rhel_subscription.password) }}"
+
+  - name: rhel subscription
+    redhat_subscription:
+      state: present
+      username: "{{ rhel_subscription.username|default() }}"
+      password: "{{ rhel_subscription.password|default() }}"
+      autosubscribe: true
+  when: >
+    ansible_distribution == "RedHat" and
+    rhel_subscription is defined
+
+- block:
+  - name: yum proxy settings
+    template:
+      src: yum.conf.j2
+      dest: /etc/yum.conf
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+    register: is_yum_proxy_setting
+    when: >
+      ansible_os_family == "RedHat" and
+      not ansible_distribution == "Fedora"
+
+  - name: dnf proxy settings
+    template:
+      src: dnf.conf.j2
+      dest: /etc/dnf/dnf.conf
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+    register: is_yum_proxy_setting
+    when: ansible_distribution == "Fedora"
+
+  always:
+  - name: common backup settings
+    include: backup.yml
+    with_flattened:
+      - "{{ is_yum_proxy_setting|default() }}"
+    loop_control:
+      loop_var: backup_item
+
+  when: proxy_env.http_proxy is defined

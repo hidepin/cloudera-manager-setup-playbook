@@ -1,0 +1,134 @@
+---
+# file: roles/common/tasks/rhel6_family.yml
+- name: (rhel6 family) Add NOZEROCONF
+  lineinfile:
+    dest: /etc/sysconfig/network
+    regexp: "^NOZEROCONF"
+    line: "NOZEROCONF=yes"
+    state: present
+    backup: yes
+  register: is_network_setting
+
+- name: (rhel6 family) Disable ipv6
+  lineinfile:
+    dest: /etc/modprobe.d/ipv6.conf
+    regexp: '^options ipv6 disable.*'
+    line: "options ipv6 disable=1"
+    state: present
+    create: yes
+    backup: yes
+  register: is_ipv6_setting
+
+- name: (rhel6 family) add ulimits settings
+  template:
+    src: enableulimit.sh.j2
+    dest: /etc/profile.d/enableulimit.sh
+    owner: root
+    group: root
+    mode: 0644
+    backup: yes
+  register: is_ulimits_setting
+
+- name: (rhel6 family) disable firewall services
+  service:
+    name: "{{ item }}"
+    state: stopped
+    enabled: no
+  with_items:
+    - iptables
+    - ip6tables
+
+- name: (rhel6 family) check NetworkManager
+  shell: rpm -q NetworkManager
+  register: is_networkmanager_installed
+  failed_when: is_networkmanager_installed.rc not in [0,1]
+  changed_when: is_networkmanager_installed.rc not in [0,1]
+
+- name: (rhel6 family) disable NetworkManager service
+  service:
+    name: NetworkManager
+    state: stopped
+    enabled: no
+  when: is_networkmanager_installed.rc == 0
+
+- name: (rhel6 family) ntp packages install
+  yum:
+    name: ntp
+    state: present
+  when: ntp_server is defined
+
+- name: (rhel6 family) ntp step-tickers settings
+  template:
+    src: etc_ntp_step-tickers.j2
+    dest: /etc/ntp/step-tickers
+    owner: root
+    group: root
+    mode: 0644
+    backup: yes
+  register: is_step_tickers_setting
+  when: ntp_server is defined
+  notify:
+    - ntpd restart
+
+- name: (rhel6 family) ntp.conf settings
+  template:
+    src: ntp.conf.j2
+    dest: /etc/ntp.conf
+    owner: root
+    group: root
+    mode: 0644
+    backup: yes
+  register: is_ntp_conf_setting
+  when: ntp_server is defined
+  notify:
+    - ntpd restart
+
+- name: (rhel6 family) /etc/sysconfig/ntpd settings
+  template:
+    src: etc_sysconfig_ntpd.j2
+    dest: /etc/sysconfig/ntpd
+    owner: root
+    group: root
+    mode: 0644
+    backup: yes
+  register: is_ntpd_setting
+  when: ntp_server is defined
+  notify:
+    - ntpd restart
+
+- name: (rhel6 family) ntpd running check
+  command: service ntpd status
+  register: running_ntpd
+  failed_when: running_ntpd.rc not in [0,1,3]
+  changed_when: running_ntpd.rc != 0
+
+- name: (rhel6 family) run ntpdate
+  service:
+    name: ntpdate
+    state: started
+  when: running_ntpd.rc == 1 and ntp_server is defined
+
+- name: (rhel6 family) enable ntpdate service
+  service:
+    name: ntpdate
+    enabled: yes
+  when: ntp_server is defined
+
+- name: (rhel6 family) enable ntpd services
+  service:
+    name: ntpd
+    state: started
+    enabled: yes
+  when: ntp_server is defined
+
+- name: (rhel6 family) backup settings
+  include: backup.yml
+  with_flattened:
+    - "{{ is_network_setting|default() }}"
+    - "{{ is_ipv6_setting|default() }}"
+    - "{{ is_ulimits_setting|default() }}"
+    - "{{ is_step_tickers_setting|default() }}"
+    - "{{ is_ntp_conf_setting|default() }}"
+    - "{{ is_ntpd_setting|default() }}"
+  loop_control:
+    loop_var: backup_item
