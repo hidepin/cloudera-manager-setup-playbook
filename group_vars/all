@@ -1,9 +1,34 @@
-ansible_ssh_user: root
-sudo: no
-colon: ":"
-ntp_server: 192.168.0.1
-cloudera_manager_ver: 5.1.2
-hadoop_storage:
-    - { mount_point: '/data/1', dev: 'sdb' }
-    - { mount_point: '/data/2', dev: 'sdc' }
-    - { mount_point: '/data/3', dev: 'sdd' }
+#proxy_env:
+#  http_proxy: http://172.16.111.1:8080
+#  https_proxy: http://172.16.111.1:8080
+rhel_subscription:
+  username: 'username'
+  password: 'password'
+ntp_server: "{{ ansible_default_ipv4.gateway }}"
+kdump_partition: "/dump"
+generate_host: False
+common_user:
+  # user/password="hidepin/hidepin123"
+  - { name: 'hidepin', password: '$1$SomeSalt$buSRLdQkj4QgWzx.tbjqv1', uid: '1000', group: 'hidepin', gid: '1000' }
+limits_setting:
+  - { domain: 'root', type: 'soft', item: 'nofile', value: '65536' }
+  - { domain: 'root', type: 'hard', item: 'nofile', value: '65536' }
+tuned_profile: 'default'
+tuned_profile_parameter:
+  - section: 'main'
+    parameter:
+      - { option: 'include', value: 'throughput-performance' }
+  - section: 'sysctl'
+    parameter:
+      - { option: 'net.ipv4.ip_local_port_range', value: '32768 64999' }
+      - { option: 'net.core.somaxconn', value: '511' }
+      - { option: 'net.ipv4.tcp_keepalive_intvl', value: '5' }
+      - { option: 'net.ipv4.tcp_keepalive_probes', value: '5' }
+      - { option: 'net.ipv4.tcp_keepalive_time', value: '60' }
+kernel_update: True
+update_pkg:
+  - glibc
+  - glibc-common
+  - glibc-devel
+  - glibc-headers
+  - systemd
