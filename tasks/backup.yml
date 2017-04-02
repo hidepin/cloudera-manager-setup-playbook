@@ -1,0 +1,41 @@
+---
+# file: roles/common/tasks/backup.yml
+- block:
+  - name: set backup file
+    set_fact: backup_file="{{ backup_item.backup_file }}"
+    when: backup_item.backup_file is defined
+
+  - name: set backup file
+    set_fact: backup_file="{{ backup_item.backup }}"
+    when: backup_item.backup is defined
+
+  - name: set dest file
+    set_fact: dest_file="{{ backup_item.dest }}"
+    when: backup_item.dest is defined
+
+  - name: set dest file
+    set_fact: dest_file="{{ backup_item.diff[0].after_header|regex_replace('\ \(.*$', '') }}"
+    when: backup_item.dest is undefined
+
+  - name: "{{ backup_file|default('no') }} backup before setting"
+    fetch:
+      src: "{{ backup_file }}"
+      dest: "backup/{{ ansible_date_time.date }}-{{ ansible_date_time.time|regex_replace(':', '') }}"
+    when: backup_file is defined
+
+  - name: "{{ dest_file|default('no') }} backup after setting"
+    fetch:
+      src: "{{ dest_file }}"
+      dest: "backup/{{ ansible_date_time.date }}-{{ ansible_date_time.time|regex_replace(':', '') }}"
+    when: dest_file is defined
+
+  - name: "{{ backup_file|default('no') }} delete setting backup"
+    file:
+      path: "{{ backup_file }}"
+      state: absent
+    when: backup_file is defined
+
+  when: >
+    backup_item is defined and
+    backup_item != "" and
+    backup_item|changed

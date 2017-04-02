@@ -1,0 +1,101 @@
+---
+# file: roles/common/tasks/main.yml
+- name: register subscription and yum proxy setting
+  include: yum_setup.yml
+
+- name: packages install for ansible
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - openssh-clients
+    - libselinux-python
+  when: >
+    ansible_os_family == "RedHat" and
+    not ansible_distribution == "Fedora"
+
+- name: disable selinux
+  shell: setenforce Permissive
+  when: ansible_selinux.status is undefined or ansible_selinux.status != "disabled"
+
+- block:
+  - name: disable selinux setting
+    copy:
+      src: etc_selinux_config
+      dest: /etc/selinux/config
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+    register: is_selinux_setting
+
+  - name: generate hosts files
+    lineinfile:
+      dest: /etc/hosts
+      regexp: '^{{ item }}.*'
+      line: "{{ item }} {{ hostvars[item].ansible_fqdn }} {{ hostvars[item].ansible_hostname }}"
+      state: present
+      backup: yes
+    when: hostvars[item].ansible_fqdn is defined and generate_host
+    register: is_hosts_setting
+    with_items: "{{ groups['all'] }}"
+
+  - name: nsswitch.conf settings
+    template:
+      src: nsswitch.conf.j2
+      dest: /etc/nsswitch.conf
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+    register: is_nsswitch_setting
+    when: ansible_dns.nameservers is undefined
+
+  always:
+  - name: common backup settings
+    include: backup.yml
+    with_flattened:
+      - "{{ is_selinux_setting|default() }}"
+      - "{{ is_hosts_setting.results|default() }}"
+      - "{{ is_nsswitch_setting|default() }}"
+    loop_control:
+      loop_var: backup_item
+
+- name: RHEL6 family only setting
+  include: rhel6_family.yml
+  when: ansible_distribution_major_version == '6'
+
+- name: RHEL7 family only setting
+  include: rhel7_family.yml
+  when: ansible_distribution_major_version != '6'
+
+- name: kernel update
+  include: kernel_update.yml
+  when: kernel_update
+
+- name: update package
+  package:
+    name: "{{ item }}"
+    state: latest
+  with_items: "{{ update_pkg }}"
+
+- name: Add common group
+  group:
+    name: "{{ item.group }}"
+    gid: "{{ item.gid }}"
+  with_items: "{{ common_user }}"
+  when: common_user is defined and common_user != None
+
+- name: Add common user
+  user:
+    name: "{{ item.name }}"
+    password: "{{ item.password }}"
+    uid: "{{ item.uid }}"
+    group: "{{ item.group }}"
+    comment: "{{ item.name }}"
+  with_items: "{{ common_user }}"
+  when: common_user is defined and common_user != None
+
+- name: reboot after change selinux
+  include: reboot.yml
+  when: ansible_selinux.status is undefined or ansible_selinux.status != "disabled"

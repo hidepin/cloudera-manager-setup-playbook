@@ -1,0 +1,57 @@
+---
+# file: roles/common/tasks/kernel_update.yml
+- block:
+  - name: check kernel update version
+    command: yum check-update -q kernel
+    register: check_kernel_update_version
+    changed_when: check_kernel_update_version.rc != 0
+    failed_when: false
+
+  - name: install kernel
+    command: yum install -y "{{ item }}"
+    when: check_kernel_update_version.rc != 0
+    with_items:
+      - kernel
+      - kernel-devel
+
+  - name: update kernel
+    package:
+      name: "{{ item }}"
+      state: latest
+    when: check_kernel_update_version.rc != 0
+    with_items:
+      - kernel-tools-libs
+      - kernel-tools
+      - kernel-headers
+      - perf
+
+  when: ansible_distribution != "Fedora"
+
+- block:
+  - name: check kernel update version
+    command: dnf check-update -q kernel
+    register: check_kernel_update_version
+    changed_when: check_kernel_update_version.rc != 0
+    failed_when: false
+
+  - name: install kernel
+    package:
+      name: "{{ item }}"
+      state: latest
+    when: check_kernel_update_version.rc != 0
+    with_items:
+      - kernel
+      - kernel-devel
+
+  - name: update kernel
+    package:
+      name: "{{ item }}"
+      state: latest
+    when: check_kernel_update_version.rc != 0
+    with_items:
+      - kernel-tools-libs
+      - kernel-tools
+      - kernel-headers
+      - perf
+
+  when: ansible_distribution == "Fedora"

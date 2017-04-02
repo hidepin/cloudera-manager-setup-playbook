@@ -1,0 +1,221 @@
+---
+# file: roles/common/tasks/rhel7_family.yml
+- name: (rhel7 family) runlevel check
+  command: systemctl get-default
+  register: runlevel
+  changed_when: false
+
+- name: (rhel7 family) set multi-user.target
+  command: systemctl set-default multi-user.target
+  when: runlevel.stdout != "multi-user.target"
+
+- name: (rhel7 family) disable firewalld services
+  service:
+    name: firewalld.service
+    enabled: no
+    state: stopped
+
+- name: (rhel7 family) virsh net_autostart check
+  stat:
+    path: /etc/libvirt/qemu/networks/autostart/default.xml
+  register: virsh_default_net_autostart
+
+- name: (rhel7 family) disable virsh net_autostart
+  shell: virsh net-destroy default && virsh net-autostart default --disable
+  when: virsh_default_net_autostart.stat.exists
+
+- block:
+  - name: (rhel7 family) chrony packages install
+    package:
+      name: chrony
+      state: present
+    when: ntp_server is defined
+
+  - name: (rhel7 family) chrony.conf settings
+    template:
+      src: chrony.conf.j2
+      dest: /etc/chrony.conf
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+    register: is_chrony_conf_setting
+    when: ntp_server is defined
+    notify: chronyd restart
+
+  - name: (rhel7 family) enable chronyd services
+    service:
+      name: chronyd
+      enabled: yes
+    when: ntp_server is defined
+
+  - name: (rhel7 family) journald.conf settings
+    template:
+      src: journald.conf.j2
+      dest: /etc/systemd/journald.conf
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+    register: is_journald_setting
+    notify: systemd-journald restart
+
+  - name: (rhel7 family) rsyslog.conf settings
+    copy:
+      src: rsyslog.conf
+      dest: /etc/rsyslog.conf
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+    register: is_rsyslog_setting
+    notify: rsyslog restart
+    when: not ansible_distribution == "Fedora"
+
+  - name: (rhel7 family) abrt check
+    stat:
+      path: /etc/abrt/abrt.conf
+    register: abrt_conf
+
+  - name: (rhel7 family) abrt.conf settings
+    template:
+      src: abrt.conf.j2
+      dest: /etc/abrt/abrt.conf
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+    register: is_abrt_conf_setting
+    when: abrt_conf.stat.exists
+    notify: abrtd restart
+
+  - name: (rhel7 family) abrt-action-save-package-data.conf settings
+    template:
+      src: abrt-action-save-package-data.conf.j2
+      dest: /etc/abrt/abrt-action-save-package-data.conf
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+    register: is_abrt_action_setting
+    when: abrt_conf.stat.exists
+    notify: abrtd restart
+
+  - name: (rhel7 family) bios check
+    shell: "[ -d /sys/firmware/efi ] && echo UEFI || echo BIOS"
+    register: bios_mode
+    changed_when: false
+
+  - name: (rhel7 family) grub settings (kdump and disable ipv6)
+    template:
+      src: etc_default_grub.j2
+      dest: /etc/default/grub
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+    register: is_grub_setting
+
+  - name: grub reconfig
+    command: grub2-mkconfig -o {{ (bios_mode.stdout == "UEFI")|ternary(grub_cfg_uefi, grub_cfg_legacy) }}
+    when: is_grub_setting|changed
+
+  - name: (rhel7 family) check kdump partition
+    shell: cat /etc/fstab | grep "{{ kdump_partition }}" | sed 's/^UUID=\([^ ]*\).*/\1/'
+    register: kdump_partition_uuid
+    changed_when: false
+    when: kdump_partition is defined
+
+  - name: (rhel7 family) create kdump dir
+    file:
+      path: "{{kdump_partition}}{{kdump_path}}"
+      state: directory
+      recurse: yes
+      owner: root
+      group: root
+      mode: 0755
+    when: kdump_partition_uuid.stdout is defined
+
+  - name: (rhel7 family) kdump.conf settings
+    template:
+      src: kdump.conf.j2
+      dest: /etc/kdump.conf
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+    register: is_kdump_setting
+    when: kdump_partition_uuid.stdout is defined
+    notify: kdump restart
+
+  - name: (rhel7 family) enable kdump services
+    service:
+      name: kdump.service
+      enabled: yes
+    when: kdump_partition_uuid.stdout is defined
+
+  - name: (rhel7 family) ulimits settings
+    template:
+      src: limits.conf.j2
+      dest: /etc/security/limits.conf
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+    with_items: "{{ limits_setting }}"
+    register: is_limits_setting
+
+  - name: (rhel7 family) tuned packages install
+    package:
+      name: tuned
+      state: present
+    when: ansible_distribution == "Fedora"
+
+  - name: (rhel7 family) create tuned profile dir
+    file:
+      path: "/etc/tuned/{{ tuned_profile }}"
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: (rhel7 family) create tuned profile settings
+    template:
+      src: tuned.conf.j2
+      dest: "/etc/tuned/{{ tuned_profile }}/tuned.conf"
+      owner: root
+      group: root
+      mode: 0644
+      backup: yes
+    with_items: "{{ tuned_profile_parameter }}"
+    register: is_tuned_profile_setting
+    notify: tuned restart
+
+  - name: (rhel7 family) check active tuned profile
+    shell: "tuned-adm active | sed 's/.*: //'"
+    register: active_tuned_profile
+    changed_when: false
+
+  - name: (rhel7 family) set active tuned profile
+    shell: tuned-adm profile "{{ tuned_profile }}"
+    when: active_tuned_profile.stdout != "{{ tuned_profile }}"
+
+  always:
+  - name: (rhel7 family) backup settings
+    include: backup.yml
+    with_flattened:
+      - "{{ is_chrony_conf_setting|default() }}"
+      - "{{ is_journald_setting|default() }}"
+      - "{{ is_rsyslog_setting|default() }}"
+      - "{{ is_abrt_conf_setting|default() }}"
+      - "{{ is_abrt_action_setting|default() }}"
+      - "{{ is_grub_setting|default() }}"
+      - "{{ is_kdump_setting|default() }}"
+      - "{{ is_limits_setting.results[0]|default() }}"
+      - "{{ is_tuned_profile_setting.results|default() }}"
+    loop_control:
+      loop_var: backup_item
+
+- name: reboot after kdump setting
+  include: reboot.yml
+  when: runlevel.stdout != "multi-user.target" or is_grub_setting|changed

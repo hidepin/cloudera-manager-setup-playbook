@@ -1,0 +1,59 @@
+#  This file is part of systemd.
+#
+#  systemd is free software; you can redistribute it and/or modify it
+#  under the terms of the GNU Lesser General Public License as published by
+#  the Free Software Foundation; either version 2.1 of the License, or
+#  (at your option) any later version.
+#
+# Entries in this file show the compile time defaults.
+# You can change settings by editing this file.
+# Defaults can be restored by simply deleting this file.
+#
+# See journald.conf(5) for details.
+
+[Journal]
+#Storage=auto
+Storage=persistent
+#Compress=yes
+#Seal=yes
+#SplitMode=uid
+#SyncIntervalSec=5m
+{% if ansible_distribution == "Fedora" %}
+#RateLimitIntervalSec=30s
+RateLimitIntervalSec=0s
+{% else %}
+#RateLimitInterval=30s
+RateLimitInterval=0s
+{% endif %}
+#RateLimitBurst=1000
+#SystemMaxUse=
+#SystemKeepFree=
+#SystemMaxFileSize=
+SystemMaxFileSize=200M
+{% if ansible_distribution == "Fedora" %}
+#SystemMaxFiles=100
+{% endif %}
+#RuntimeMaxUse=
+#RuntimeKeepFree=
+#RuntimeMaxFileSize=
+{% if ansible_distribution == "Fedora" %}
+#RuntimeMaxFiles=100
+{% endif %}
+#MaxRetentionSec=
+MaxRetentionSec=100day
+#MaxFileSec=1month
+MaxFileSec=1day
+{% if ansible_distribution == "Fedora" %}
+#ForwardToSyslog=no
+{% else %}
+#ForwardToSyslog=yes
+{% endif %}
+#ForwardToKMsg=no
+#ForwardToConsole=no
+#ForwardToWall=yes
+#TTYPath=/dev/console
+#MaxLevelStore=debug
+#MaxLevelSyslog=debug
+#MaxLevelKMsg=notice
+#MaxLevelConsole=info
+#MaxLevelWall=emerg
