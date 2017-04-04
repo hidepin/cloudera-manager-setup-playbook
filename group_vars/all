@@ -6,7 +6,7 @@ rhel_subscription:
   password: 'password'
 ntp_server: "{{ ansible_default_ipv4.gateway }}"
 kdump_partition: "/dump"
-generate_host: False
+generate_host: True
 common_user:
   # user/password="hidepin/hidepin123"
   - { name: 'hidepin', password: '$1$SomeSalt$buSRLdQkj4QgWzx.tbjqv1', uid: '1000', group: 'hidepin', gid: '1000' }
