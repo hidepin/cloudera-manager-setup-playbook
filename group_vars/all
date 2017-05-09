@@ -15,9 +15,6 @@ limits_setting:
   - { domain: 'root', type: 'hard', item: 'nofile', value: '65536' }
 tuned_profile: 'default'
 tuned_profile_parameter:
-  - section: 'main'
-    parameter:
-      - { option: 'include', value: 'throughput-performance' }
   - section: 'vm'
     parameter:
       - { option: 'transparent_hugepages', value: 'never' }
