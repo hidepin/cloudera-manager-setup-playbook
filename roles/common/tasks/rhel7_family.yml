@@ -20,9 +20,20 @@
     path: /etc/libvirt/qemu/networks/autostart/default.xml
   register: virsh_default_net_autostart
 
+- name: (rhel7 family) virsh exists check
+  stat:
+    path: /usr/bin/virsh
+  register: virsh_command
+
 - name: (rhel7 family) disable virsh net_autostart
   shell: virsh net-destroy default && virsh net-autostart default --disable
-  when: virsh_default_net_autostart.stat.exists
+  when: virsh_default_net_autostart.stat.exists and virsh_command.stat.exists
+
+- name: (rhel7 family) disable virsh net_autostart
+  file:
+    path: /etc/libvirt/qemu/networks/autostart/default.xml
+    state: absent
+  when: not virsh_command.stat.exists
 
 - block:
   - name: (rhel7 family) chrony packages install
@@ -178,6 +189,11 @@
       owner: root
       group: root
       mode: 0755
+
+  - name: (rhel7 family) tuned recommend check
+    command: tuned-adm recommend
+    register: tuned_adm_recommend
+    changed_when: false
 
   - name: (rhel7 family) create tuned profile settings
     template:

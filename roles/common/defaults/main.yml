@@ -31,9 +31,6 @@ limits_setting:
 #  - { domain: 'postgres', type: 'hard', item: 'nofile', value: '65536' }
 tuned_profile: 'default'
 tuned_profile_parameter:
-  - section: 'main'
-    parameter:
-      - { option: 'include', value: 'throughput-performance' }
   - section: 'sysctl'
     parameter:
       - { option: 'net.ipv4.ip_local_port_range', value: '32768 64999' }
