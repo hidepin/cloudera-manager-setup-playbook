@@ -1,22 +1,31 @@
 ---
 # file: roles/common/handlers/main.yml
 - name: ntpd restart
-  service: name=ntpd state=restarted
+  service:
+    name: ntpd
+    state: restarted
 
 - name: chronyd restart
-  service: name=chronyd state=restarted
+  service:
+    name: chronyd
+    state: restarted
 
 - name: systemd-journald restart
-  service: name=systemd-journald.service state=restarted
+  service:
+    name: systemd-journald.service
+    state: restarted
 
 - name: rsyslog restart
-  service: name=rsyslog.service state=restarted
+  service:
+    name: rsyslog.service
+    state: restarted
 
 - name: abrtd restart
-  service: name=abrtd.service state=restarted
+  service:
+    name: abrtd.service
+    state: restarted
 
 - name: kdump restart
-  service: name=kdump.service state=restarted
-
-- name: tuned restart
-  service: name=tuned.service state=restarted
+  service:
+    name: kdump.service
+    state: restarted

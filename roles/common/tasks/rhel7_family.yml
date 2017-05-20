@@ -205,7 +205,6 @@
       backup: yes
     with_items: "{{ tuned_profile_parameter }}"
     register: is_tuned_profile_setting
-    notify: tuned restart
 
   - name: (rhel7 family) check active tuned profile
     shell: "tuned-adm active | sed 's/.*: //'"
@@ -215,6 +214,13 @@
   - name: (rhel7 family) set active tuned profile
     shell: tuned-adm profile "{{ tuned_profile }}"
     when: active_tuned_profile.stdout != "{{ tuned_profile }}"
+
+
+  - name: (rhel7 family) tuned restart
+    service:
+      name: tuned.service
+      state: restarted
+    when: is_tuned_profile_setting|changed
 
   always:
   - name: (rhel7 family) backup settings

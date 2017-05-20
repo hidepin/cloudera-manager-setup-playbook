@@ -27,6 +27,11 @@
       username: "{{ rhel_subscription.username|default() }}"
       password: "{{ rhel_subscription.password|default() }}"
       autosubscribe: true
+
+  - name: disable rt-beta repo
+    shell: yum-config-manager --disable rhel-7-server-rt-beta-rpms
+    changed_when: false
+
   when: >
     ansible_distribution == "RedHat" and
     rhel_subscription is defined
