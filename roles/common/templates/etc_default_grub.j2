@@ -3,5 +3,17 @@ GRUB_DISTRIBUTOR="$(sed 's, release .*$,,g' /etc/system-release)"
 GRUB_DEFAULT=saved
 GRUB_DISABLE_SUBMENU=true
 GRUB_TERMINAL_OUTPUT="console"
-GRUB_CMDLINE_LINUX="crashkernel={{ (ansible_distribution == "Fedora")|ternary("128M", "auto") }} rhgb quiet ipv6.disable=1"
+GRUB_CMDLINE_LINUX="{% if kdump_enabled %}crashkernel={{ (ansible_distribution == "Fedora")|ternary("128M", "auto") }} {% endif %}rhgb quiet{% if not ipv6_enabled %} ipv6.disable=1{% endif %}"
 GRUB_DISABLE_RECOVERY="true"
+{% set tuned_params = {'enabled': False} %}
+{%- for section in tuned_profile_parameter %}
+{%- for parameter in section.parameter %}
+{%- if section.section == 'bootloader' and parameter.option == 'cmdline' and parameter.value %}
+{%- if tuned_params.update({'enabled': True}) %}{% endif %}
+{%- endif %}
+{%- endfor %}
+{%- endfor %}
+{% if tuned_params.enabled %}
+GRUB_CMDLINE_LINUX_DEFAULT="${GRUB_CMDLINE_LINUX_DEFAULT:+$GRUB_CMDLINE_LINUX_DEFAULT }\$tuned_params"
+GRUB_INITRD_OVERLAY="${GRUB_INITRD_OVERLAY:+$GRUB_INITRD_OVERLAY }\$tuned_initrd"
+{% endif %}

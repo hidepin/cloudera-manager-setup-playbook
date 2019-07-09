@@ -8,6 +8,7 @@ proxy_env:
 #  username: 'username'
 #  password: 'password'
 #ntp_server: 172.16.111.1
+rhel_subscription_enabled: True
 grub_cfg_uefi: "/boot/efi/EFI/{{ ansible_distribution|lower }}/grub.cfg"
 grub_cfg_legacy: "/boot/grub2/grub.cfg"
 kdump_partition: "/dump"
@@ -39,9 +40,13 @@ tuned_profile_parameter:
       - { option: 'net.ipv4.tcp_keepalive_probes', value: '5' }
       - { option: 'net.ipv4.tcp_keepalive_time', value: '60' }
 kernel_update: True
+update_pkg_enabled: True
 update_pkg:
 #  - glibc
 #  - glibc-common
 #  - glibc-devel
 #  - glibc-headers
 #  - systemd
+kdump_enabled: True
+reboot_enabled: True
+ipv6_enabled: False
