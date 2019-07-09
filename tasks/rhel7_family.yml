@@ -40,7 +40,13 @@
     package:
       name: chrony
       state: present
-    when: ntp_server is defined
+    register: result
+    until: result is success
+    retries: 3
+    delay: 5
+    when: >
+      ntp_server is defined and
+      update_pkg_enabled
 
   - name: (rhel7 family) chrony.conf settings
     template:
@@ -81,7 +87,7 @@
       backup: yes
     register: is_rsyslog_setting
     notify: rsyslog restart
-    when: not ansible_distribution == "Fedora"
+    when: ansible_distribution != "Fedora"
 
   - name: (rhel7 family) abrt check
     stat:
@@ -126,10 +132,13 @@
       mode: 0644
       backup: yes
     register: is_grub_setting
+    when: >
+      kdump_enabled or
+      not ipv6_enabled
 
   - name: grub reconfig
     command: grub2-mkconfig -o {{ (bios_mode.stdout == "UEFI")|ternary(grub_cfg_uefi, grub_cfg_legacy) }}
-    when: is_grub_setting|changed
+    when: is_grub_setting is changed
 
   - name: (rhel7 family) check kdump partition
     shell: cat /etc/fstab | grep "{{ kdump_partition }}" | sed 's/^UUID=\([^ ]*\).*/\1/'
@@ -145,7 +154,9 @@
       owner: root
       group: root
       mode: 0755
-    when: kdump_partition_uuid.stdout is defined
+    when: >
+      kdump_enabled and
+      kdump_partition_uuid.stdout is defined
 
   - name: (rhel7 family) kdump.conf settings
     template:
@@ -156,14 +167,18 @@
       mode: 0644
       backup: yes
     register: is_kdump_setting
-    when: kdump_partition_uuid.stdout is defined
+    when: >
+      kdump_enabled and
+      kdump_partition_uuid.stdout is defined
     notify: kdump restart
 
   - name: (rhel7 family) enable kdump services
     service:
       name: kdump.service
       enabled: yes
-    when: kdump_partition_uuid.stdout is defined
+    when: >
+      kdump_enabled and
+      kdump_partition_uuid.stdout is defined
 
   - name: (rhel7 family) ulimits settings
     template:
@@ -180,7 +195,13 @@
     package:
       name: tuned
       state: present
-    when: ansible_distribution == "Fedora"
+    register: result
+    until: result is success
+    retries: 3
+    delay: 5
+    when: >
+      update_pkg_enabled and
+      ansible_distribution == "Fedora"
 
   - name: (rhel7 family) create tuned profile dir
     file:
@@ -213,18 +234,17 @@
 
   - name: (rhel7 family) set active tuned profile
     shell: tuned-adm profile "{{ tuned_profile }}"
-    when: active_tuned_profile.stdout != "{{ tuned_profile }}"
-
+    when: active_tuned_profile.stdout != tuned_profile
 
   - name: (rhel7 family) tuned restart
     service:
       name: tuned.service
       state: restarted
-    when: is_tuned_profile_setting|changed
+    when: is_tuned_profile_setting is changed
 
   always:
   - name: (rhel7 family) backup settings
-    include: backup.yml
+    include_tasks: backup.yml
     with_flattened:
       - "{{ is_chrony_conf_setting|default() }}"
       - "{{ is_journald_setting|default() }}"
@@ -239,5 +259,8 @@
       loop_var: backup_item
 
 - name: reboot after kdump setting
-  include: reboot.yml
-  when: runlevel.stdout != "multi-user.target" or is_grub_setting|changed
+  import_tasks: reboot.yml
+  when: >
+    reboot_enabled and
+    ( runlevel.stdout != "multi-user.target" or
+    is_grub_setting is changed)

@@ -1,18 +1,30 @@
 ---
 # file: roles/common/tasks/main.yml
 - name: register subscription and yum proxy setting
-  include: yum_setup.yml
+  import_tasks: yum_setup.yml
+
+- name: set update_pkg_enabled
+  set_fact:
+    update_pkg_enabled: False
+  when: >
+    ansible_distribution == "RedHat" and
+    not rhel_subscription_enabled
 
 - name: packages install for ansible
   package:
     name: "{{ item }}"
     state: present
+  register: result
+  until: result is success
+  retries: 3
+  delay: 5
   with_items:
     - openssh-clients
     - libselinux-python
   when: >
+    update_pkg_enabled and
     ansible_os_family == "RedHat" and
-    not ansible_distribution == "Fedora"
+    ansible_distribution != "Fedora"
 
 - name: disable selinux
   shell: setenforce Permissive
@@ -53,7 +65,7 @@
 
   always:
   - name: common backup settings
-    include: backup.yml
+    include_tasks: backup.yml
     with_flattened:
       - "{{ is_selinux_setting|default() }}"
       - "{{ is_hosts_setting.results|default() }}"
@@ -62,22 +74,31 @@
       loop_var: backup_item
 
 - name: RHEL6 family only setting
-  include: rhel6_family.yml
+  import_tasks: rhel6_family.yml
   when: ansible_distribution_major_version == '6'
 
 - name: RHEL7 family only setting
-  include: rhel7_family.yml
+  import_tasks: rhel7_family.yml
   when: ansible_distribution_major_version != '6'
 
 - name: kernel update
-  include: kernel_update.yml
-  when: kernel_update
+  import_tasks: kernel_update.yml
+  when: >
+    kernel_update and
+    ( rhel_subscription_enabled or
+    ansible_distribution != "RedHat" )
 
 - name: update package
   package:
     name: "{{ item }}"
     state: latest
+  register: result
+  until: result is success
+  retries: 3
+  delay: 5
   with_items: "{{ update_pkg }}"
+  when: >
+    update_pkg_enabled
 
 - name: Add common group
   group:
@@ -97,5 +118,8 @@
   when: common_user is defined and common_user != None
 
 - name: reboot after change selinux
-  include: reboot.yml
-  when: ansible_selinux.status is undefined or ansible_selinux.status != "disabled"
+  import_tasks: reboot.yml
+  when: >
+    reboot_enabled and
+    ( ansible_selinux.status is undefined or
+    ansible_selinux.status != "disabled" )

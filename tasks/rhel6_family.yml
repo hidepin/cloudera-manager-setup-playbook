@@ -55,7 +55,13 @@
   yum:
     name: ntp
     state: present
-  when: ntp_server is defined
+  register: result
+  until: result is success
+  retries: 3
+  delay: 5
+  when: >
+    ntp_server is defined and
+    update_pkg_enabled
 
 - name: (rhel6 family) ntp step-tickers settings
   template:
@@ -122,7 +128,7 @@
   when: ntp_server is defined
 
 - name: (rhel6 family) backup settings
-  include: backup.yml
+  include_tasks: backup.yml
   with_flattened:
     - "{{ is_network_setting|default() }}"
     - "{{ is_ipv6_setting|default() }}"
